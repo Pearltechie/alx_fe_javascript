@@ -1,11 +1,7 @@
 // script.js
 
 document.addEventListener("DOMContentLoaded", () => {
-    let quotes = JSON.parse(localStorage.getItem("quotes")) || [
-        { text: "The only limit to our realization of tomorrow is our doubts of today.", category: "Motivation" },
-        { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Success" },
-        { text: "Believe you can and you're halfway there.", category: "Inspiration" }
-    ];
+    let quotes = JSON.parse(localStorage.getItem("quotes")) || [];
 
     const quoteDisplay = document.getElementById("quoteDisplay");
     const newQuoteBtn = document.getElementById("newQuote");
@@ -14,6 +10,24 @@ document.addEventListener("DOMContentLoaded", () => {
     categoryFilter.innerHTML = '<option value="all">All Categories</option>';
     categoryFilter.addEventListener("change", filterQuotes);
     document.body.insertBefore(categoryFilter, quoteDisplay);
+
+    async function fetchQuotesFromServer() {
+        try {
+            const response = await fetch("https://mockapi.example.com/quotes");
+            const serverQuotes = await response.json();
+            quotes = mergeQuotes(quotes, serverQuotes);
+            saveQuotes();
+            populateCategories();
+            showRandomQuote();
+        } catch (error) {
+            console.error("Error fetching quotes:", error);
+        }
+    }
+
+    function mergeQuotes(localQuotes, serverQuotes) {
+        const uniqueQuotes = [...new Map([...serverQuotes, ...localQuotes].map(q => [q.text, q])).values()];
+        return uniqueQuotes;
+    }
 
     function saveQuotes() {
         localStorage.setItem("quotes", JSON.stringify(quotes));
@@ -46,54 +60,36 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("importFile").addEventListener("change", importFromJsonFile);
     }
 
-    function addQuote() {
+    async function addQuote() {
         const newQuoteText = document.getElementById("newQuoteText").value;
         const newQuoteCategory = document.getElementById("newQuoteCategory").value;
         
         if (newQuoteText && newQuoteCategory) {
-            quotes.push({ text: newQuoteText, category: newQuoteCategory });
+            const newQuote = { text: newQuoteText, category: newQuoteCategory };
+            quotes.push(newQuote);
             saveQuotes();
             populateCategories();
             document.getElementById("newQuoteText").value = "";
             document.getElementById("newQuoteCategory").value = "";
             alert("Quote added successfully!");
-            showRandomQuote(); // Update the displayed quote
+            showRandomQuote();
+            
+            try {
+                await fetch("https://mockapi.example.com/quotes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(newQuote)
+                });
+            } catch (error) {
+                console.error("Error posting new quote:", error);
+            }
         } else {
             alert("Please enter both a quote and a category.");
         }
     }
 
-    function exportToJsonFile() {
-        const dataStr = JSON.stringify(quotes, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "quotes.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    function importFromJsonFile(event) {
-        const fileReader = new FileReader();
-        fileReader.onload = function(event) {
-            try {
-                const importedQuotes = JSON.parse(event.target.result);
-                if (Array.isArray(importedQuotes)) {
-                    quotes = [...quotes, ...importedQuotes];
-                    saveQuotes();
-                    populateCategories();
-                    alert('Quotes imported successfully!');
-                    showRandomQuote();
-                } else {
-                    alert('Invalid JSON file format.');
-                }
-            } catch (error) {
-                alert('Error parsing JSON file.');
-            }
-        };
-        fileReader.readAsText(event.target.files[0]);
+    function syncQuotes() {
+        setInterval(fetchQuotesFromServer, 60000);
     }
 
     function populateCategories() {
@@ -122,7 +118,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     newQuoteBtn.addEventListener("click", showRandomQuote);
-    createAddQuoteForm(); // Create form for adding quotes and import/export functionality
-    populateCategories(); // Populate category filter
-    showRandomQuote(); // Display an initial quote on load
+    createAddQuoteForm();
+    fetchQuotesFromServer();
+    syncQuotes();
+    populateCategories();
+    showRandomQuote();
 });
