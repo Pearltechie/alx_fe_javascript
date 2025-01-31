@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
             saveQuotes();
             populateCategories();
             showRandomQuote();
+            alert("Quotes synced with server!");
         } catch (error) {
             console.error("Error fetching quotes:", error);
         }
