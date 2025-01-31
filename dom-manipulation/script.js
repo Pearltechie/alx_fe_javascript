@@ -121,9 +121,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function exportToJsonFile() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quotes));
+        const blob = new Blob([JSON.stringify(quotes)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
         const downloadAnchor = document.createElement("a");
-        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("href", url);
         downloadAnchor.setAttribute("download", "quotes.json");
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
