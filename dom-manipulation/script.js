@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchQuotesFromServer() {
         try {
-            const response = await fetch("https://mockapi.example.com/quotes");
+            const response = await fetch("https://jsonplaceholder.typicode.com/posts");
             const serverQuotes = await response.json();
             quotes = mergeQuotes(quotes, serverQuotes);
             saveQuotes();
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function postQuoteToServer(newQuote) {
         try {
-            await fetch("https://mockapi.example.com/quotes", {
+            await fetch("https://jsonplaceholder.typicode.com/posts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newQuote)
