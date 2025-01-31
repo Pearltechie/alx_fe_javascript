@@ -24,6 +24,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function postQuoteToServer(newQuote) {
+        try {
+            await fetch("https://mockapi.example.com/quotes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newQuote)
+            });
+        } catch (error) {
+            console.error("Error posting new quote:", error);
+        }
+    }
+
     function mergeQuotes(localQuotes, serverQuotes) {
         const uniqueQuotes = [...new Map([...serverQuotes, ...localQuotes].map(q => [q.text, q])).values()];
         return uniqueQuotes;
@@ -73,16 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("newQuoteCategory").value = "";
             alert("Quote added successfully!");
             showRandomQuote();
-            
-            try {
-                await fetch("https://mockapi.example.com/quotes", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(newQuote)
-                });
-            } catch (error) {
-                console.error("Error posting new quote:", error);
-            }
+            postQuoteToServer(newQuote);
         } else {
             alert("Please enter both a quote and a category.");
         }
@@ -115,6 +118,35 @@ document.addEventListener("DOMContentLoaded", () => {
     function getFilteredQuotes() {
         const selectedCategory = categoryFilter.value;
         return selectedCategory === "all" ? quotes : quotes.filter(q => q.category === selectedCategory);
+    }
+
+    function exportToJsonFile() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quotes));
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "quotes.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        document.body.removeChild(downloadAnchor);
+    }
+
+    function importFromJsonFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedQuotes = JSON.parse(e.target.result);
+                quotes = mergeQuotes(quotes, importedQuotes);
+                saveQuotes();
+                populateCategories();
+                showRandomQuote();
+                alert("Quotes imported successfully!");
+            } catch (error) {
+                alert("Error importing quotes: Invalid JSON format.");
+            }
+        };
+        reader.readAsText(file);
     }
 
     newQuoteBtn.addEventListener("click", showRandomQuote);
